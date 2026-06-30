@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock
 from pathlib import Path
 
 from alarm_cli.models import Alarm, RepeatMode
-from alarm_cli.notifier import play_sound, send_notification, prompt_snooze_or_dismiss
+from alarm_cli.notifier import _afplay_available, play_sound, send_notification, prompt_snooze_or_dismiss
 
 ALARM = Alarm(
     id="n1",
@@ -16,25 +16,21 @@ ALARM = Alarm(
 )
 
 
-def test_play_sound_skips_missing_file(tmp_path):
-    missing = tmp_path / "nope.wav"
-    # should not raise even though file is absent
-    play_sound(missing)
+def test_play_sound_skips_when_afplay_unavailable():
+    with patch("alarm_cli.notifier.shutil.which", return_value=None):
+        with patch("alarm_cli.notifier.subprocess.run") as mock_run:
+            play_sound()
+            mock_run.assert_not_called()
 
 
-def test_play_sound_calls_afplay_on_macos(tmp_path):
-    sound = tmp_path / "alarm.wav"
-    sound.write_bytes(b"RIFF")  # fake wav
-
-    with patch("alarm_cli.notifier.sys") as mock_sys, \
-         patch("alarm_cli.notifier.subprocess.run") as mock_run, \
-         patch("alarm_cli.notifier.threading.Thread") as mock_thread:
-        mock_sys.platform = "darwin"
-        instance = MagicMock()
-        mock_thread.return_value = instance
-        play_sound(sound)
-        mock_thread.assert_called_once()
-        instance.start.assert_called_once()
+def test_play_sound_calls_afplay_on_macos():
+    with patch("alarm_cli.notifier._afplay_available", return_value=True), \
+         patch("alarm_cli.notifier.subprocess.run") as mock_run:
+        play_sound()
+        mock_run.assert_called_once()
+        cmd = mock_run.call_args[0][0]
+        assert cmd[0] == "afplay"
+        assert "Ping.aiff" in str(cmd[1])
 
 
 def test_send_notification_macos_calls_osascript():

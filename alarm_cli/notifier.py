@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import shutil
 import subprocess
 import sys
-import threading
 from pathlib import Path
 
 from rich.console import Console
@@ -11,23 +11,18 @@ from alarm_cli.models import Alarm
 
 console = Console()
 
-SOUNDS_DIR = Path(__file__).parent.parent / "sounds"
-DEFAULT_SOUND = SOUNDS_DIR / "alarm.wav"
+MACOS_SOUNDS = "/System/Library/Sounds"
+DEFAULT_SOUND = Path(MACOS_SOUNDS) / "Ping.aiff"
 
 
-def play_sound(sound_path: Path = DEFAULT_SOUND) -> None:
-    """Play a sound file using the platform's built-in player (non-blocking)."""
-    if not sound_path.exists():
+def _afplay_available() -> bool:
+    return sys.platform == "darwin" and shutil.which("afplay") is not None
+
+
+def play_sound() -> None:
+    if not _afplay_available():
         return
-
-    if sys.platform == "darwin":
-        cmd = ["afplay", str(sound_path)]
-    elif sys.platform.startswith("linux"):
-        cmd = ["aplay", str(sound_path)]
-    else:
-        return
-
-    threading.Thread(target=subprocess.run, args=(cmd,), kwargs={"check": False}, daemon=True).start()
+    subprocess.run(["afplay", str(DEFAULT_SOUND)], capture_output=True)
 
 
 def send_notification(alarm: Alarm) -> None:
