@@ -1,0 +1,7 @@
+typer>=0.12
+rich>=13
+APScheduler>=3.10
+
+[dev]
+pytest>=8
+pytest-cov
