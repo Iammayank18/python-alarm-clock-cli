@@ -19,7 +19,7 @@ A clean, cross-platform alarm clock application for the terminal — no database
 
 ```bash
 # Clone and set up a virtual environment
-git clone <repo-url> alarm-cli
+git clone https://github.com/Iammayank18/python-alarm-clock-cli alarm-cli
 cd alarm-cli
 python3 -m venv .venv
 source .venv/bin/activate
